@@ -1,7 +1,6 @@
 import { useRef, useLayoutEffect } from "react";
 import Building from "../buildinggen/building";
 
-
 const Blueprint = (props) => {
 
     const canvasRef = useRef();
@@ -11,8 +10,6 @@ const Blueprint = (props) => {
     useLayoutEffect(() => {
         const canv = canvasRef.current;
         const ctx = canv.getContext('2d');
-
-        // ctx.fillRect(100, 100, 50, 50);
         bld.draw(ctx);
     }, []);
 
