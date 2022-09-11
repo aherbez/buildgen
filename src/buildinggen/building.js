@@ -21,11 +21,7 @@ const pickSide = () => {
 const randPos = (currMin, currMax, extents) => {
     const newMin = currMin - extents + 1;
     const newMax = currMax - 1;
-
     const result = (Math.floor(Math.random() * (newMax-newMin))) + newMin; 
-    
-    console.log(currMin, currMax, extents, result);
-    
     return result;
 }
 
@@ -71,7 +67,7 @@ class Building {
     }
 
     get _finished() {
-        return (this._rooms.length >= 10);
+        return (this._rooms.length >= 7);
     }
 
     _addRoom() {
@@ -137,7 +133,6 @@ class Building {
             }
     
         }
-        // console.log(r, this.edges);
 
         this.minPos = [Math.min(this.minPos[0], r.x), Math.min(this.minPos[1], r.y)];
         this.maxPos = [Math.max(this.maxPos[0], r.x+r.w), Math.max(this.maxPos[0], r.y+r.h)];
@@ -146,7 +141,7 @@ class Building {
     }
 
     _finalize() {
-        // console.log(this);
+        console.log(this);
         this.w = this.edges[E] - this.edges[W];
         this.h = this.edges[N] - this.edges[S];
     }

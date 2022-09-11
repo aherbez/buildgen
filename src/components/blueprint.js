@@ -5,11 +5,14 @@ const Blueprint = (props) => {
 
     const canvasRef = useRef();
 
-    const bld = new Building();
 
     useLayoutEffect(() => {
+        const bld = new Building();
+
         const canv = canvasRef.current;
         const ctx = canv.getContext('2d');
+        ctx.clearRect(0, 0, 500, 500);
+        
         bld.draw(ctx);
     }, []);
 
