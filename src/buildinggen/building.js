@@ -31,7 +31,7 @@ class Room {
         this.y = 0;
         this.w = Math.floor(Math.random() * MAX_ROOM_SIZE) + 2;
         this.h = Math.floor(Math.random() * MAX_ROOM_SIZE) + 2;
-        this.order = 0;
+        this.id = -1;
     }
 }
 
@@ -67,12 +67,12 @@ class Building {
     }
 
     get _finished() {
-        return (this._rooms.length >= 7);
+        return (this._rooms.length >= 4);
     }
 
     _addRoom() {
         const r = new Room();
-        r.order = this._rooms.length;
+        r.id = this._rooms.length;
 
         if (this._rooms.length < 1) {
             this.edges[N] = new Extent(r.h, 0, r.w);
@@ -135,22 +135,164 @@ class Building {
         }
 
         this.minPos = [Math.min(this.minPos[0], r.x), Math.min(this.minPos[1], r.y)];
-        this.maxPos = [Math.max(this.maxPos[0], r.x+r.w), Math.max(this.maxPos[0], r.y+r.h)];
-
+        this.maxPos = [Math.max(this.maxPos[0], r.x+r.w), Math.max(this.maxPos[1], r.y+r.h)];
+        
         this._rooms.push(r);
     }
 
     _finalize() {
         console.log(this);
-        this.w = this.edges[E] - this.edges[W];
-        this.h = this.edges[N] - this.edges[S];
+        this.w = this.maxPos[0] - this.minPos[0];
+        this.h = this.maxPos[1] - this.minPos[1];
+
+        this.contents = [];
+        for (let i=0; i < this.h; i++) {
+            // contents.push([]);
+            this.contents.push(Array(this.w).fill(-1));
+        }
+        console.log(this.contents.length, this.h);
+        console.log(this.contents[0].length, this.w);
+
+        const stripsH = Array.from(Array(this.h), () => {
+            return {
+                spans: []    
+            }
+        });
+        const stripsV = Array.from(Array(this.w), () => {
+            return {
+                spans: []
+            }
+        });
+
+        // console.log(stripsH);
+
+        const offsetX = this.minPos[0] === 0 ? 0 : -this.minPos[0];
+        const offsetY = this.minPos[1] === 0 ? 0 : -this.minPos[1];
+
+        this._rooms.forEach(r => {
+            // correct negative positions
+            r.x += offsetX;
+            r.y += offsetY;
+
+            /*
+            for (let y=0; y<r.h; y++) {
+                for (let x=0; x<r.w; x++) {
+                    this.contents[r.y+y][r.x+x] = r.id;
+                }
+            }
+            */
+
+            for (let y=0; y < r.h; y++) {
+                stripsH[r.y+y].spans.push({
+                    start: r.x,
+                    end: r.x + r.w,
+                    id: r.id
+                });
+            }
+
+            for (let x=0; x<r.w; x++) {
+                stripsV[r.x+x].spans.push({
+                    start: r.y,
+                    end: r.y + r.h,
+                    id: r.id
+                });
+            }
+
+            for (let x=0; x < r.w; x++) {
+                /*
+                if (x === 0) {
+                    // add to vert strips
+                    stripsH[r.y].spans.push({
+                        start: r.x,
+                        end: r.x + r.w,
+                        id: r.id
+                    });
+                }
+                */
+
+               for (let y=0; y < r.h; y++) {
+
+                    // mark cells
+                    this.contents[y+r.y][x+r.x] = r.id;
+               }
+            }
+        });
+    
+        const spanSort = (sA, sB) => {
+            if (sA.start < sB.start) return -1;
+            if (sA.start > sB.start) return 1;
+            return 0;
+        }
+
+        const markRooms = (start, end, pos, isHoriz) => {
+            // console.log('filling in: ', start, end, pos);
+            if (isHoriz) {
+                for (let i=0; i < end-start; i++) {
+                    this.contents[pos][start+i] = 128;
+                }
+            } else {
+                for (let i=0; i < end-start; i++) {
+                    this.contents[start+i][pos] = 128;
+                }
+            }
+        }
+
+        stripsH.forEach((hs, spanIdx) => {
+            if (hs.spans.length > 1) {
+                hs.spans.sort(spanSort);
+                // console.log('SPANS', hs.spans);
+                for (let i=1; i<hs.spans.length; i++) {
+                    const start = hs.spans[i-1].end;
+                    const end = hs.spans[i].start;
+                    if (end-start > 0) {
+                        markRooms(start, end, spanIdx, true);
+                    }
+                }
+            }
+        });
+
+        stripsV.forEach((hs, spanIdx) => {
+            if (hs.spans.length > 1) {
+                hs.spans.sort(spanSort);
+                // console.log('SPANS', hs.spans);
+                for (let i=1; i<hs.spans.length; i++) {
+                    const start = hs.spans[i-1].end;
+                    const end = hs.spans[i].start;
+                    if (end-start > 0) {
+                        markRooms(start, end, spanIdx, false);
+                    }
+                }
+            }
+        });
+
     }
 
     draw(ctx) {
         ctx.save();
         
-        ctx.translate(-this.minPos[0] * GRID_SIZE, -this.minPos[1] * GRID_SIZE);
+        // ctx.translate(-this.minPos[0] * GRID_SIZE, -this.minPos[1] * GRID_SIZE);
         
+        const colors = [];
+        ctx.strokeStyle = "#AAA";
+
+        for (let i=0; i < this.h; i++) {
+            for (let j=0; j < this.w; j++) {
+                ctx.strokeRect(j*GRID_SIZE, i*GRID_SIZE, GRID_SIZE, GRID_SIZE);
+
+                const rID = this.contents[i][j];
+                if (rID !== -1) {
+                    if (!colors[rID]) {
+                        colors[rID] = randomColor();
+                    }
+
+                    ctx.fillStyle = colors[rID];
+                    ctx.fillRect(j*GRID_SIZE, i*GRID_SIZE, GRID_SIZE, GRID_SIZE);
+                }
+            }
+        }
+
+
+        /*
         this._rooms.forEach(r => {
             ctx.save();
             ctx.translate(r.x * GRID_SIZE, r.y * GRID_SIZE);
@@ -159,6 +301,7 @@ class Building {
             ctx.strokeRect(0, 0, r.w * GRID_SIZE, r.h * GRID_SIZE);
             ctx.restore();
         });
+        */
 
         ctx.restore();
     }
