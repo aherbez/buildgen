@@ -277,10 +277,11 @@ class Building {
 
         for (let i=0; i < this.h; i++) {
             for (let j=0; j < this.w; j++) {
-                ctx.strokeRect(j*GRID_SIZE, i*GRID_SIZE, GRID_SIZE, GRID_SIZE);
 
                 const rID = this.contents[i][j];
-                if (rID !== -1) {
+                if (rID === -1) {
+                    ctx.strokeRect(j*GRID_SIZE, i*GRID_SIZE, GRID_SIZE, GRID_SIZE);
+                } else {
                     if (!colors[rID]) {
                         colors[rID] = randomColor();
                     }
