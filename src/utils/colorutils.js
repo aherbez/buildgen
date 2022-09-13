@@ -1,7 +1,7 @@
 const randomColor = () => {
-    const r = Math.floor(Math.random() * 128);
-    const g = Math.floor(Math.random() * 128);
-    const b = Math.floor(Math.random() * 255);
+    const r = Math.floor(Math.random() * 127) + 127;
+    const g = Math.floor(Math.random() * 127) + 127;
+    const b = Math.floor(Math.random() * 127) + 127;
     return `rgb(${r}, ${g}, ${b})`;
 }
 

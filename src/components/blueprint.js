@@ -1,26 +1,24 @@
-import { useRef, useLayoutEffect } from "react";
+import { useRef, useLayoutEffect, useEffect } from "react";
 import Building from "../buildinggen/building";
 
 const Blueprint = (props) => {
-
+    console.log('Blueprint!');
     const canvasRef = useRef();
 
-
-    useLayoutEffect(() => {
+    useEffect(() => {
         const bld = new Building();
-
-        const canv = canvasRef.current;
+        const canv = canvasRef.current; // document.getElementById('stage');
         const ctx = canv.getContext('2d');
-        ctx.clearRect(0, 0, 500, 500);
-        
+        ctx.clearRect(0, 0, 500, 500);        
         bld.draw(ctx);
     }, []);
 
     return (<div>
         <canvas 
+            id="stage"
+            ref={canvasRef}
             width={500}
-            height={500}
-            ref={canvasRef}>    
+            height={500}>    
         </canvas>
     </div>)
 }
