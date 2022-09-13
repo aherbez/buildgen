@@ -277,11 +277,10 @@ class Building {
             return WALL_INTERIOR;
         }
 
-        
         const getRooms = (x1, y1, x2, y2) => {
             return [safeGetCell(x1, y1), safeGetCell(x2, y2)];
         }
-        
+
         const roomDiffHash = (ids) => {
             const id1 = ids[0];
             const id2 = ids[1];
@@ -291,14 +290,20 @@ class Building {
             return id2 + '_' + id1;
         }
         
+        /*
+        // this is the first approach. leaving it here since
+        // it was discussed in chat        
+        let lastDiffHash = null;
+        let lastDiffHashesV = Array(this.w).fill('');
+        */
+
         // gen walls
         this.walls = {
             exterior: [],
             interior: []
         };
-        
-        let lastDiffHash = null;
-        let lastDiffHashesV = Array(this.w).fill('');
+    
+        let intWalls = new Map();
 
         for (let y=0; y < this.h+1; y++) {
             for (let x=0; x < this.w+1; x++) {
@@ -320,15 +325,20 @@ class Building {
                         this.walls.exterior.push(w);
                     } else {
                         // maybe make a door
-                        let currRooms = getRooms(x, y, x, y-1)
-                        let currDiffHash = roomDiffHash(currRooms);
-                        console.log('int H wall ', currDiffHash, lastDiffHash);
+                        let currDiffHash = roomDiffHash(getRooms(x, y, x, y-1));
+                        
+                        let currEntries = intWalls.get(currDiffHash) || [];
+                        intWalls.set(currDiffHash, [...currEntries, w]);                        
+                        
+                        /*
+                        // this is the first approach. leaving it here since
+                        // it was discussed in chat
                         if (currDiffHash !== lastDiffHash) {
                             console.log('adding door');
                             w.obj = OBJ_DOOR_INT;
                             lastDiffHash = currDiffHash;
                         }
-
+                        */
                         this.walls.interior.push(w);
                     }
                 }
@@ -348,17 +358,31 @@ class Building {
                         }
                         this.walls.exterior.push(w);
                     } else {
+                        
                         let currDiffHash = roomDiffHash(getRooms(x, y, x-1, y));
+                        let currEntries = intWalls.get(currDiffHash) || [];
+                        intWalls.set(currDiffHash, [...currEntries, w]);                        
+
+                        /*
+                        // this is the first approach. leaving it here since
+                        // it was discussed in chat
                         if (currDiffHash !== lastDiffHashesV[x]) {
                             console.log('adding door');
                             w.obj = OBJ_DOOR_INT;
                             lastDiffHashesV[x] = currDiffHash;
                         }
+                        */
                         this.walls.interior.push(w);
                     }
                 }
             }
         }
+
+        intWalls.forEach((walls, hash) => {
+            const wallIdx = Math.floor(Math.random() * walls.length);
+            walls[wallIdx].obj = OBJ_DOOR_INT;
+
+        })
 
         // add some doors. I considered using a Fischer-Yates shuffle
         // then selecting the first N locations, but this is quicker, and
@@ -390,7 +414,7 @@ class Building {
         
         ctx.strokeStyle = "#AAA";
 
-        console.table(this.contents);
+        // console.table(this.contents);
 
         for (let i=0; i < this.h; i++) {
             for (let j=0; j < this.w; j++) {
@@ -436,7 +460,6 @@ class Building {
         this.walls.exterior.forEach(wall => {
             switch (wall.obj) {
                 case OBJ_DOOR_EXT:
-                    console.log('DRAWING EXT WALL');
                     ctx.save();
                     ctx.fillStyle = "#0F0";
                     if (wall.v) {
