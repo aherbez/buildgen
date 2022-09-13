@@ -1,4 +1,4 @@
-import { useRef, useLayoutEffect, useEffect } from "react";
+import { useRef, useEffect } from "react";
 import Building from "../buildinggen/building";
 
 const Blueprint = (props) => {

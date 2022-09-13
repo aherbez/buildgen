@@ -16,7 +16,7 @@ const WALL_INTERIOR = 2;
 const OBJ_NONE = 0;
 const OBJ_DOOR_EXT = 1;
 const OBJ_WINDOW = 2;
-const OBJ_DOOR_INT = 3;
+// const OBJ_DOOR_INT = 3;
 
 const WINDOW_CHANCE = 0.3;
 
@@ -270,9 +270,19 @@ class Building {
             return WALL_EXT;
         }
 
+        /*
         const getRooms = (x1, y1, x2, y2) => {
             return [safeGetCell(x1, y1), safeGetCell(x2, y2)];
         }
+
+        let lastHDiv = null;
+        const roomDivHash = (id1, id2) => {
+            if (id1 < id2) {
+                return id1 + '_' + id2;
+            }
+            return id2 + '_' + id1;
+        }
+        */
 
         // gen walls
         this.walls = {
@@ -280,14 +290,8 @@ class Building {
             interior: []
         };
         
-        let lastHDiv = null;
 
-        const roomDivHash = (id1, id2) => {
-            if (id1 < id1) {
-                return id1 + '_' + id2;
-            }
-            return id2 + '_' + id1;
-        }
+
 
         for (let y=0; y < this.h+1; y++) {
             for (let x=0; x < this.w+1; x++) {
@@ -300,7 +304,7 @@ class Building {
                         y: y,
                         v: 0,
                         t: hWall,
-                        obj: -1
+                        obj: OBJ_NONE
                     }
                     if (hWall === WALL_EXT) {
                         if (Math.random() < WINDOW_CHANCE) {
@@ -308,9 +312,6 @@ class Building {
                         }
                         this.walls.exterior.push(w);
                     } else {
-
-
-
                         this.walls.interior.push(w);
                     }
                 }
