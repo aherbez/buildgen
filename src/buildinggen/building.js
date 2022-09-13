@@ -1,8 +1,8 @@
 import { randomColor } from "../utils/colorutils";
 
 // const GRID_MIN = 1;
-const GRID_SIZE = 10;
-const MAX_ROOM_SIZE = 15;
+const GRID_SIZE = 20;
+const MAX_ROOM_SIZE = 5;
 
 const N = 0;
 const E = 1;
@@ -16,7 +16,7 @@ const WALL_INTERIOR = 2;
 const OBJ_NONE = 0;
 const OBJ_DOOR_EXT = 1;
 const OBJ_WINDOW = 2;
-// const OBJ_DOOR_INT = 3;
+const OBJ_DOOR_INT = 3;
 
 const WINDOW_CHANCE = 0.3;
 
@@ -40,8 +40,8 @@ class Room {
     constructor() {
         this.x = 0;
         this.y = 0;
-        this.w = Math.floor(Math.random() * MAX_ROOM_SIZE) + 2;
-        this.h = Math.floor(Math.random() * MAX_ROOM_SIZE) + 2;
+        this.w = Math.floor(Math.random() * MAX_ROOM_SIZE) + 1;
+        this.h = Math.floor(Math.random() * MAX_ROOM_SIZE) + 1;
         this.id = -1;
     }
 }
@@ -260,38 +260,45 @@ class Building {
         const getWallType = (x1, y1, x2, y2) => {
             const curr = safeGetCell(x1, y1);
             const compare = safeGetCell(x2, y2);
-            console.log(x1, y1, x2, y2, '|', curr, compare)
+            
+            // three possible states
+
+            // no diff, so no wall
             if (curr === compare) {
                 return WALL_NONE;
             }
-            if ((curr !== -1) && (compare !== -1)) {
-                return WALL_INTERIOR;
+
+            // one of the two is null space, so exterior wall
+            if ((curr === -1) || (compare === -1)) {
+                return WALL_EXT;    
             }
-            return WALL_EXT;
+
+            // otherwise, must be interior
+            return WALL_INTERIOR;
         }
 
-        /*
+        
         const getRooms = (x1, y1, x2, y2) => {
             return [safeGetCell(x1, y1), safeGetCell(x2, y2)];
         }
-
-        let lastHDiv = null;
-        const roomDivHash = (id1, id2) => {
+        
+        const roomDiffHash = (ids) => {
+            const id1 = ids[0];
+            const id2 = ids[1];
             if (id1 < id2) {
                 return id1 + '_' + id2;
             }
             return id2 + '_' + id1;
         }
-        */
-
+        
         // gen walls
         this.walls = {
             exterior: [],
             interior: []
         };
         
-
-
+        let lastDiffHash = null;
+        let lastDiffHashesV = Array(this.w).fill('');
 
         for (let y=0; y < this.h+1; y++) {
             for (let x=0; x < this.w+1; x++) {
@@ -312,6 +319,16 @@ class Building {
                         }
                         this.walls.exterior.push(w);
                     } else {
+                        // maybe make a door
+                        let currRooms = getRooms(x, y, x, y-1)
+                        let currDiffHash = roomDiffHash(currRooms);
+                        console.log('int H wall ', currDiffHash, lastDiffHash);
+                        if (currDiffHash !== lastDiffHash) {
+                            console.log('adding door');
+                            w.obj = OBJ_DOOR_INT;
+                            lastDiffHash = currDiffHash;
+                        }
+
                         this.walls.interior.push(w);
                     }
                 }
@@ -331,6 +348,12 @@ class Building {
                         }
                         this.walls.exterior.push(w);
                     } else {
+                        let currDiffHash = roomDiffHash(getRooms(x, y, x-1, y));
+                        if (currDiffHash !== lastDiffHashesV[x]) {
+                            console.log('adding door');
+                            w.obj = OBJ_DOOR_INT;
+                            lastDiffHashesV[x] = currDiffHash;
+                        }
                         this.walls.interior.push(w);
                     }
                 }
@@ -440,6 +463,25 @@ class Building {
                     break;
             }
         });
+        this.walls.interior.forEach(wall => {
+            switch (wall.obj) {
+                case OBJ_DOOR_INT:
+                    console.log('drawing interior door');
+                    ctx.save();
+                    ctx.fillStyle = "#00F";
+                    if (wall.v) {
+                        ctx.fillRect((wall.x*GRID_SIZE)-4, (wall.y*GRID_SIZE)+2, 8, GRID_SIZE-4);
+
+                    } else {
+                        ctx.fillRect(wall.x*GRID_SIZE+2, (wall.y*GRID_SIZE)-4, GRID_SIZE-4, 8);
+                    }
+                    ctx.restore();
+                    break;
+                default:
+                    break;
+            }
+        });
+
         ctx.restore();
 
 
