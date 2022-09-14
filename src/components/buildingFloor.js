@@ -3,8 +3,8 @@ import FloorSection from "./floorSection";
 
 const BuildingFloor = (props) => {
 
-    const intIdxStart = props.data.walls.exterior.length;
-    const floorIdxStart = intIdxStart + props.data.walls.interior.length;
+    // const intIdxStart = props.data.walls.exterior.length;
+    // const floorIdxStart = intIdxStart + props.data.walls.interior.length;
 
     const wallsExt = props.data.walls.exterior.map((wall, i) => {
         return (
@@ -20,7 +20,7 @@ const BuildingFloor = (props) => {
             <WallSection 
                 data={wall}
                 isExterior={false}
-                key={i + intIdxStart}
+                key={i}
             />);
     });
 
@@ -28,10 +28,19 @@ const BuildingFloor = (props) => {
         return (
             <FloorSection
                 data={floor}
-                key={i + floorIdxStart}
+                key={i}
             />
         )
     });
+
+    const roof = (props.data.hasRoof) ? props.data.ceilings.map((tile, i) => {
+        return (
+            <FloorSection
+                data={tile}
+                key={i}
+            />
+        )
+    }) : <group />
 
     return (
         <group
@@ -39,13 +48,17 @@ const BuildingFloor = (props) => {
         >
             <group>
                 {wallsExt}
-            </group>
-            <group>
                 {wallsInt}
-            </group>
-            <group>
                 {floors}
             </group>
+
+            <group
+                position={[0, 3, 0]}
+            >
+                {roof}
+            </group>
+
+
         </group>);
 }
 

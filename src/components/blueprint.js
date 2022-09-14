@@ -18,9 +18,9 @@ const Blueprint = (props) => {
             <button onClick={() => {
                 setFloor(Math.max(0, currFloor-1));
             }}>{"<-"}</button>
-            {currFloor+1} / {building.floors.length-1}
+            {currFloor+1} / {building.floors.length}
             <button onClick={() => {
-                setFloor(Math.min(building.floors.length-2, currFloor+1));
+                setFloor(Math.min(building.floors.length-1, currFloor+1));
             }}>{"->"}</button>
         </div>
 

@@ -59,12 +59,11 @@ class Building {
         this.floors = [];
 
         this.numFloors = Math.floor(Math.random() * 10) + 3;
-
+        
         for (let i=0; i < this.numFloors; i++) {
             this._addFloor();
         }
 
-        this._addRoof();
     }
 
     _addFloor() {
@@ -74,17 +73,8 @@ class Building {
             const prevFloor = this.floors[this.floors.length-1];
             this.floors.push(new BuildingFloor(prevFloor));
         }
-    }
-
-    _addRoof() {
-        const lastFloor = this.floors[this.floors.length-1];
         
-        const roofLevel = structuredClone(lastFloor);
-        roofLevel.zPos = lastFloor.zPos + 1;
-        roofLevel.walls.exterior = [];
-        roofLevel.walls.interior = [];
-        console.log('roof level', roofLevel);
-        this.floors.push(roofLevel);
+        this.floors[this.floors.length-1].hasRoof = true;
     }
 
     draw(ctx, floor) {
@@ -96,6 +86,8 @@ class Building {
 
 class BuildingFloor {
     constructor(lowerFloor = null) {
+
+        this.hasRoof = false;
 
         if (lowerFloor === null) {
             // make a ground floor
@@ -379,6 +371,7 @@ class BuildingFloor {
         };
 
         this.floors = [];
+        this.ceilings = [];
     
         let intWalls = new Map();
 
@@ -404,6 +397,12 @@ class BuildingFloor {
                         y,
                         obj: OBJ_NONE
                     });
+
+                    this.ceilings.push({
+                        x,
+                        y,
+                        obj: OBJ_NONE
+                    })
                 }
                 
                 const hWall = getWallType(x, y, x, y-1);
