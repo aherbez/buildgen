@@ -1,4 +1,4 @@
-import { randomColor } from "../utils/colorutils";
+import { randomColorLight } from "../utils/colorutils";
 
 // const GRID_MIN = 1;
 const GRID_SIZE = 20;
@@ -56,25 +56,70 @@ class Extent {
 
 class Building {
     constructor() {
-        console.log('new building!');
+        this.floors = [];
 
-        this._rooms = [];
-        this.w = 0;
-        this.h = 0;
-        this.edges = [
-            new Extent(),
-            new Extent(),
-            new Extent(),
-            new Extent()
-        ];
-
-        this.minPos = [0,0];
-        this.maxPos = [0,0];
-    
-        while (!this._finished) {
-            this._addRoom();
+        for (let i=0; i < 5; i++) {
+            this._addFloor();
         }
-        this._finalize();
+    }
+
+    _addFloor() {
+        if (this.floors.length === 0) {
+            this.floors.push(new BuildingFloor());
+        } else {
+            const prevFloor = this.floors[this.floors.length-1];
+            this.floors.push(new BuildingFloor(prevFloor));
+        }
+    }
+
+    draw(ctx, floor) {
+        const flIdx = Math.max(Math.min(floor, this.floors.length-1), 0);
+        this.floors[flIdx].draw(ctx);
+    }
+}
+
+
+class BuildingFloor {
+    constructor(lowerFloor = null) {
+
+        if (lowerFloor === null) {
+            // make a ground floor
+            this._rooms = [];
+            this.w = 0;
+            this.h = 0;
+            this.edges = [
+                new Extent(),
+                new Extent(),
+                new Extent(),
+                new Extent()
+            ];
+            
+            this.zPos = 0;
+
+            this.minPos = [0,0];
+            this.maxPos = [0,0];
+        
+            while (!this._finished) {
+                this._addRoom();
+            }
+            this._finalizeExtents();
+            this._finalize();   
+
+        } else {
+            // make a floor based on the previous floor
+            this._rooms = structuredClone(lowerFloor._rooms);
+            this.edges = structuredClone(lowerFloor.edges);
+            this.minPos = structuredClone(lowerFloor.minPos);
+            this.maxPos = structuredClone(lowerFloor.maxPos);
+            this.w = lowerFloor.w;
+            this.h = lowerFloor.h;
+            this.zPos = lowerFloor.zPos + 1;
+
+            this._rooms.pop();
+
+            this._finalize();
+        }
+
     }
 
     get _finished() {
@@ -151,19 +196,39 @@ class Building {
         this._rooms.push(r);
     }
 
-    _finalize() {
-        console.log(this);
+    _finalizeExtents() {
         this.w = this.maxPos[0] - this.minPos[0];
         this.h = this.maxPos[1] - this.minPos[1];
+
+        // prevent -0
+        const offsetX = this.minPos[0] === 0 ? 0 : -this.minPos[0];
+        const offsetY = this.minPos[1] === 0 ? 0 : -this.minPos[1];
+
+        this._rooms.forEach(r => {
+            // correct negative positions
+            r.x += offsetX;
+            r.y += offsetY;            
+        });
+
+        this.minPos = [
+            this.minPos[0] + offsetX,
+            this.minPos[1] + offsetY
+        ];
+        this.maxPos = [
+            this.maxPos[0] + offsetX,
+            this.maxPos[1] + offsetY
+        ];
+
+    }
+
+    _finalize() {
+        console.log(this);
 
         this.contents = [];
         for (let i=0; i < this.h; i++) {
             // contents.push([]);
             this.contents.push(Array(this.w).fill(-1));
         }
-
-        // console.log(this.contents.length, this.h);
-        // console.log(this.contents[0].length, this.w);
 
         const stripsH = Array.from(Array(this.h), () => {
             return {
@@ -176,13 +241,7 @@ class Building {
             }
         });
 
-        const offsetX = this.minPos[0] === 0 ? 0 : -this.minPos[0];
-        const offsetY = this.minPos[1] === 0 ? 0 : -this.minPos[1];
-
         this._rooms.forEach(r => {
-            // correct negative positions
-            r.x += offsetX;
-            r.y += offsetY;
 
             for (let x=0; x < r.w; x++) {
                 stripsV[r.x+x].spans.push({
@@ -390,7 +449,7 @@ class Building {
         // selecting randomly from different spans of the list spreads the doors
         // out around the building better than a shuffle would, and is O(num doors)
         // instead of O(num exterior walls)
-        const numDoors = 3;
+        const numDoors = Math.ceil(this._rooms.length/2);
         for (let i=0; i < numDoors; i++) {
             const wallRange = Math.floor(this.walls.exterior.length / numDoors);
             let wallIdx = Math.floor(Math.random() * wallRange);
@@ -424,7 +483,7 @@ class Building {
                     ctx.strokeRect(j*GRID_SIZE, i*GRID_SIZE, GRID_SIZE, GRID_SIZE);
                 } else {
                     if (!colors[rID]) {
-                        colors[rID] = randomColor();
+                        colors[rID] = randomColorLight();
                     }
 
                     ctx.fillStyle = colors[rID];
@@ -436,6 +495,7 @@ class Building {
         ctx.save();
         ctx.lineWidth = 3;
         ctx.strokeStyle = "#F00";
+        ctx.beginPath();
         this.walls.exterior.forEach((w,i) => {
                 ctx.moveTo(w.x * GRID_SIZE, w.y * GRID_SIZE);
                 const end = w.v ? {x: w.x, y: w.y+1} : {x: w.x+1, y: w.y};
@@ -445,6 +505,7 @@ class Building {
         ctx.restore();
 
         ctx.save();
+        ctx.beginPath();
         ctx.lineWidth = 1;
         ctx.strokeStyle = "#000";
         this.walls.interior.forEach((w,i) => {                        
@@ -456,7 +517,6 @@ class Building {
         ctx.restore();
 
         ctx.save();
-        
         this.walls.exterior.forEach(wall => {
             switch (wall.obj) {
                 case OBJ_DOOR_EXT:
@@ -506,8 +566,6 @@ class Building {
         });
 
         ctx.restore();
-
-
 
         ctx.restore();
     }
