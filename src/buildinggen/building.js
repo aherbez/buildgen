@@ -359,11 +359,21 @@ class BuildingFloor {
             exterior: [],
             interior: []
         };
+
+        this.floors = [];
     
         let intWalls = new Map();
 
         for (let y=0; y < this.h+1; y++) {
             for (let x=0; x < this.w+1; x++) {
+                const currCell = safeGetCell(x, y);
+                if (currCell !== -1) {
+                    this.floors.push({
+                        x,
+                        y,
+                        obj: OBJ_NONE
+                    });
+                }
                 
                 const hWall = getWallType(x, y, x, y-1);
                 
@@ -407,7 +417,7 @@ class BuildingFloor {
                         y: y,
                         v: 1,
                         t: vWall,
-                        obj: -1
+                        obj: OBJ_NONE
                     }
                     if (vWall === WALL_EXT) {
                         if (Math.random() < WINDOW_CHANCE) {

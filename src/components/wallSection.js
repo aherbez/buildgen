@@ -15,7 +15,8 @@ const getColor = (wall, isExt) => {
             case 2:
                 return "#AAA";
             default:
-                break;
+                return "#FFF";
+                
         }
     } else {
         if (wall.obj === 3) {
@@ -26,9 +27,7 @@ const getColor = (wall, isExt) => {
     }
 }
 
-const WallSection = (props) => {
-    console.log(props.data);
-    
+const WallSection = (props) => {    
     const pos = [
         (props.data.x * 4),
         1.5,

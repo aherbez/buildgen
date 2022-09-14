@@ -1,8 +1,7 @@
 import WallSection from "./wallSection";
+import FloorSection from "./floorSection";
 
 const BuildingFloor = (props) => {
-    console.log(props.data.walls);
-    // const walls = props.floorData.
 
     const wallsExt = props.data.walls.exterior.map((wall, i) => {
         return (
@@ -22,6 +21,15 @@ const BuildingFloor = (props) => {
             />);
     });
 
+    const floors = props.data.floors.map((floor, i) => {
+        return (
+            <FloorSection
+                data={floor}
+                key={i}
+            />
+        )
+    });
+
     return (
         <group
             position={[0, props.data.zPos * 3, 0]}
@@ -32,7 +40,9 @@ const BuildingFloor = (props) => {
             <group>
                 {wallsInt}
             </group>
-            
+            <group>
+                {floors}
+            </group>
         </group>);
 }
 
