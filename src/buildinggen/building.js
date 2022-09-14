@@ -222,8 +222,6 @@ class BuildingFloor {
     }
 
     _finalize() {
-        console.log(this);
-
         this.contents = [];
         for (let i=0; i < this.h; i++) {
             // contents.push([]);
@@ -461,8 +459,6 @@ class BuildingFloor {
 
     draw(ctx) {
         ctx.clearRect(0, 0, 500, 500);
-        ctx.fillStyle = "#FFF";
-        ctx.fillRect(0, 0, 500, 500);
 
         ctx.save();
         
@@ -549,7 +545,6 @@ class BuildingFloor {
         this.walls.interior.forEach(wall => {
             switch (wall.obj) {
                 case OBJ_DOOR_INT:
-                    console.log('drawing interior door');
                     ctx.save();
                     ctx.fillStyle = "#00F";
                     if (wall.v) {

@@ -1,21 +1,20 @@
 import { useRef, useEffect, useState } from "react";
-import Building from "../buildinggen/building";
+import "../App.css";
 
 const Blueprint = (props) => {
-    console.log('Blueprint!');
     const canvasRef = useRef();
-    const [ building ] = useState(new Building());
+    const building = props.building;
     const [ currFloor, setFloor ] = useState(0);
 
     useEffect(() => {
-            const canv = canvasRef.current; // document.getElementById('stage');
+        const canv = canvasRef.current;
         const ctx = canv.getContext('2d');
         ctx.clearRect(0, 0, 500, 500);        
         building.draw(ctx, currFloor);
     }, [currFloor, building]);
 
-    return (<div>
-        <div>
+    return (<div id="layer-map">
+        <div id="controls-floor">
             <button onClick={() => {
                 setFloor(Math.max(0, currFloor-1));
             }}>{"<-"}</button>
