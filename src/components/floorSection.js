@@ -11,7 +11,7 @@ const FloorSection = (props) => {
         position={pos}
     >
         <boxBufferGeometry args={[4,0.1,4,1,1,1]} />
-        <meshLambertMaterial color={"#888"} />
+        <meshLambertMaterial color={"#555"} />
     </mesh>);
 }
 

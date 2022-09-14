@@ -9,13 +9,14 @@ const getColor = (wall, isExt) => {
     if (isExt) {
         switch (wall.obj) {
             case 0:
-                return "red";
+                return "#888";
             case 1: 
                 return "#0F0";
             case 2:
-                return "#AAA";
-            default:
                 return "#FFF";
+            default:
+                // should never get here
+                return "#F0F";
                 
         }
     } else {
