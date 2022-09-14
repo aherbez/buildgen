@@ -40,8 +40,8 @@ class Room {
     constructor() {
         this.x = 0;
         this.y = 0;
-        this.w = Math.floor(Math.random() * MAX_ROOM_SIZE) + 1;
-        this.h = Math.floor(Math.random() * MAX_ROOM_SIZE) + 1;
+        this.w = Math.floor(Math.random() * MAX_ROOM_SIZE) + 2;
+        this.h = Math.floor(Math.random() * MAX_ROOM_SIZE) + 2;
         this.id = -1;
     }
 }
@@ -58,9 +58,13 @@ class Building {
     constructor() {
         this.floors = [];
 
-        for (let i=0; i < 5; i++) {
+        this.numFloors = Math.floor(Math.random() * 10) + 3;
+
+        for (let i=0; i < this.numFloors; i++) {
             this._addFloor();
         }
+
+        this._addRoof();
     }
 
     _addFloor() {
@@ -70,6 +74,17 @@ class Building {
             const prevFloor = this.floors[this.floors.length-1];
             this.floors.push(new BuildingFloor(prevFloor));
         }
+    }
+
+    _addRoof() {
+        const lastFloor = this.floors[this.floors.length-1];
+        
+        const roofLevel = structuredClone(lastFloor);
+        roofLevel.zPos = lastFloor.zPos + 1;
+        roofLevel.walls.exterior = [];
+        roofLevel.walls.interior = [];
+        console.log('roof level', roofLevel);
+        this.floors.push(roofLevel);
     }
 
     draw(ctx, floor) {
@@ -115,9 +130,12 @@ class BuildingFloor {
             this.h = lowerFloor.h;
             this.zPos = lowerFloor.zPos + 1;
 
-            this._rooms.pop();
+            if ((this._rooms.length > 1) && (Math.random() > 0.5)) {
+                this._rooms.pop();
+            }
 
-            this._finalize();
+
+            this._finalize(lowerFloor);
         }
 
     }
@@ -221,7 +239,7 @@ class BuildingFloor {
 
     }
 
-    _finalize() {
+    _finalize(prevFloor = null) {
         this.contents = [];
         for (let i=0; i < this.h; i++) {
             // contents.push([]);
@@ -308,15 +326,15 @@ class BuildingFloor {
             }
         });
 
-        const safeGetCell = (x, y) => {
+        const safeGetCell = (x, y, contents) => {
             if (x < 0 || x >= this.w) return -1;
             if (y < 0 || y >= this.h) return -1;
-            return this.contents[y][x];
+            return contents[y][x];
         }
 
         const getWallType = (x1, y1, x2, y2) => {
-            const curr = safeGetCell(x1, y1);
-            const compare = safeGetCell(x2, y2);
+            const curr = safeGetCell(x1, y1, this.contents);
+            const compare = safeGetCell(x2, y2, this.contents);
             
             // three possible states
 
@@ -335,7 +353,7 @@ class BuildingFloor {
         }
 
         const getRooms = (x1, y1, x2, y2) => {
-            return [safeGetCell(x1, y1), safeGetCell(x2, y2)];
+            return [safeGetCell(x1, y1, this.contents), safeGetCell(x2, y2, this.contents)];
         }
 
         const roomDiffHash = (ids) => {
@@ -366,7 +384,20 @@ class BuildingFloor {
 
         for (let y=0; y < this.h+1; y++) {
             for (let x=0; x < this.w+1; x++) {
-                const currCell = safeGetCell(x, y);
+                const currCell = safeGetCell(x, y, this.contents);
+
+                // maybe add extra floors to close off open areas
+                if (prevFloor !== null) {                    
+                    const prevCell = safeGetCell(x, y, prevFloor.contents);
+                    if ((prevCell !== -1) && (currCell === -1)) {
+                        this.floors.push({
+                            x,
+                            y,
+                            obj: OBJ_NONE
+                        });
+                    }                     
+                }
+
                 if (currCell !== -1) {
                     this.floors.push({
                         x,

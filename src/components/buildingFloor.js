@@ -3,6 +3,9 @@ import FloorSection from "./floorSection";
 
 const BuildingFloor = (props) => {
 
+    const intIdxStart = props.data.walls.exterior.length;
+    const floorIdxStart = intIdxStart + props.data.walls.interior.length;
+
     const wallsExt = props.data.walls.exterior.map((wall, i) => {
         return (
             <WallSection 
@@ -17,7 +20,7 @@ const BuildingFloor = (props) => {
             <WallSection 
                 data={wall}
                 isExterior={false}
-                key={props.data.walls.exterior.length + i}
+                key={i + intIdxStart}
             />);
     });
 
@@ -25,7 +28,7 @@ const BuildingFloor = (props) => {
         return (
             <FloorSection
                 data={floor}
-                key={i}
+                key={i + floorIdxStart}
             />
         )
     });
