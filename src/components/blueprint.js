@@ -4,7 +4,7 @@ import Building from "../buildinggen/building";
 const Blueprint = (props) => {
     console.log('Blueprint!');
     const canvasRef = useRef();
-    const [ building, setBuilding ] = useState(new Building());
+    const [ building ] = useState(new Building());
     const [ currFloor, setFloor ] = useState(0);
 
     useEffect(() => {
@@ -12,7 +12,7 @@ const Blueprint = (props) => {
         const ctx = canv.getContext('2d');
         ctx.clearRect(0, 0, 500, 500);        
         building.draw(ctx, currFloor);
-    }, [currFloor]);
+    }, [currFloor, building]);
 
     return (<div>
         <div>
