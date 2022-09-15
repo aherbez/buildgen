@@ -1,9 +1,11 @@
 import { randomColorLight } from "../utils/colorutils";
+import { getGeoAndRotation } from "./cellUtils";
 
 // const GRID_MIN = 1;
 const GRID_SIZE = 10;
 const MIN_ROOM_SIZE = 3;
 const MAX_ROOM_SIZE = 7;
+const ROOM_REMOVAL_CHANCE = 0.5;
 
 const N = 0;
 const E = 1;
@@ -97,7 +99,6 @@ class Building {
     }
 }
 
-
 class BuildingFloor {
     constructor(lowerFloor = null) {
 
@@ -122,6 +123,7 @@ class BuildingFloor {
             
             this.stairsLoc = null;
             this.prevFloor = null;
+            this.nextFloor = null;
 
             while (!this._finished) {
                 this._addRoom();
@@ -140,8 +142,9 @@ class BuildingFloor {
             this.zPos = lowerFloor.zPos + 1;
 
             this.prevFloor = lowerFloor;
+            lowerFloor.nextFloor = this;
 
-            if ((this._rooms.length > 1) && (Math.random() > 0.5)) {
+            if ((this._rooms.length > 1) && (Math.random() < ROOM_REMOVAL_CHANCE)) {
                 this._rooms.pop();
             }
 
@@ -374,6 +377,20 @@ class BuildingFloor {
             return contents[y][x];
         }
 
+        const characterizeCell = (x, y, contents) => {
+            let cellID = 0;
+            let pow = 1;
+            for (let j=-1; j<2; j++) {
+                for (let i=-1; i<2; i++) {
+                    if ((safeGetCell(x+i, y+j, contents)) !== -1) {
+                        cellID += pow;
+                    }
+                    pow *= 2;
+                }
+            }
+            return cellID;
+        }        
+
         const getWallType = (x1, y1, x2, y2) => {
             const curr = safeGetCell(x1, y1, this.contents);
             const compare = safeGetCell(x2, y2, this.contents);
@@ -444,7 +461,6 @@ class BuildingFloor {
             this.floors.push(floor);
         }
 
-
         for (let y=0; y < this.h+1; y++) {
             for (let x=0; x < this.w+1; x++) {
                 const currCell = safeGetCell(x, y, this.contents);
@@ -459,11 +475,17 @@ class BuildingFloor {
 
                 if (currCell !== -1) {
                     addFloorAt(x, y);
+                    
+                    const cellType = characterizeCell(x,y, this.contents);
+                    const  [geo, rot] = getGeoAndRotation(cellType);
 
                     this.ceilings.push({
                         x,
                         y,
-                        obj: OBJ_NONE
+                        obj: OBJ_NONE,
+                        t: cellType,
+                        geo,
+                        rot
                     })
                 }
                 
@@ -557,6 +579,23 @@ class BuildingFloor {
             this.walls.exterior[wallIdx].obj = OBJ_DOOR_EXT;    
         }
 
+    }
+
+    _drawStairs(ctx, stairsLoc) {
+        ctx.save();
+        ctx.fillStyle = "#F0F";
+        
+        ctx.translate((stairsLoc.x + 0.5) * GRID_SIZE,
+            (stairsLoc.y + 0.5) * GRID_SIZE);
+            ctx.rotate(Math.PI/2 * stairsLoc.r);
+            ctx.fillRect(-GRID_SIZE/2, -GRID_SIZE/2, GRID_SIZE, GRID_SIZE);
+        
+        ctx.fillStyle = "#FFF";
+        ctx.beginPath();
+        ctx.arc(GRID_SIZE/4, 0, GRID_SIZE/4, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.restore();
     }
 
     draw(ctx) {
@@ -664,6 +703,7 @@ class BuildingFloor {
         ctx.restore(); // end walls
 
         // draw stairs
+        /*
         if (this.zPos > 0 && this.stairsLoc !== null) {
             ctx.save();
             ctx.fillStyle = "#F0F";
@@ -680,8 +720,15 @@ class BuildingFloor {
     
             ctx.restore();
         }
+        */
 
+        if (this.stairsLoc) {
+            this._drawStairs(ctx, this.stairsLoc);
+        }
 
+        if (this.nextFloor && this.nextFloor.stairsLoc) {
+            this._drawStairs(ctx, this.nextFloor.stairsLoc);
+        }
 
 
         ctx.restore();

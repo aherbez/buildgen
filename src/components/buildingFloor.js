@@ -57,7 +57,7 @@ const BuildingFloor = (props) => {
             <RoofSection
                 data={tile}
                 key={i}
-                geo={props.roofGeo[0]}
+                geo={props.roofGeo[tile.geo]}
                 mat={props.roofMat}
             />
         )

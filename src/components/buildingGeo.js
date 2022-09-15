@@ -38,7 +38,9 @@ const BuildingGeo = (props) => {
 
     const roofGeo = [
         nodes.floor_wood_slab_.geometry,    // flat roof
-        nodes.roof_wood.geometry            // angled roof
+        nodes.roof_wood.geometry,           // angled roof
+        nodes.roof_wood_corner_outer.geometry,  // corner (convex)
+        nodes.roof_wood_corner_inner.geometry   // corner (concave)
     ];
 
 
