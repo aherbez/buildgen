@@ -2,7 +2,8 @@ import { randomColorLight } from "../utils/colorutils";
 
 // const GRID_MIN = 1;
 const GRID_SIZE = 20;
-const MAX_ROOM_SIZE = 5;
+const MIN_ROOM_SIZE = 3;
+const MAX_ROOM_SIZE = 7;
 
 const N = 0;
 const E = 1;
@@ -17,6 +18,7 @@ const OBJ_NONE = 0;
 const OBJ_DOOR_EXT = 1;
 const OBJ_WINDOW = 2;
 const OBJ_DOOR_INT = 3;
+const OBJ_STAIRS = 4;
 
 const WINDOW_CHANCE = 0.3;
 
@@ -27,6 +29,15 @@ const pickSide = () => {
         (Math.random() > 0.5 ? 0 : 2) +
         (Math.random() > 0.5 ? 0 : 1)
     )
+}
+
+const randomBetween = (mN, mX) => {
+    return Math.floor(Math.random() * (mX-mN)) + mN;
+}
+
+const randomElement = (ar) => {
+    const i = Math.floor(Math.random() * ar.length);
+    return ar[i];
 }
 
 const randPos = (currMin, currMax, extents) => {
@@ -40,8 +51,11 @@ class Room {
     constructor() {
         this.x = 0;
         this.y = 0;
-        this.w = Math.floor(Math.random() * MAX_ROOM_SIZE) + 2;
-        this.h = Math.floor(Math.random() * MAX_ROOM_SIZE) + 2;
+        // this.w = Math.floor(Math.random() * MAX_ROOM_SIZE) + 2;
+        // this.h = Math.floor(Math.random() * MAX_ROOM_SIZE) + 2;
+        this.w = randomBetween(MIN_ROOM_SIZE, MAX_ROOM_SIZE);
+        this.h = randomBetween(MIN_ROOM_SIZE, MAX_ROOM_SIZE);
+        
         this.id = -1;
     }
 }
@@ -105,7 +119,10 @@ class BuildingFloor {
 
             this.minPos = [0,0];
             this.maxPos = [0,0];
-        
+            
+            this.stairsLoc = null;
+            this.prevFloor = null;
+
             while (!this._finished) {
                 this._addRoom();
             }
@@ -122,10 +139,11 @@ class BuildingFloor {
             this.h = lowerFloor.h;
             this.zPos = lowerFloor.zPos + 1;
 
+            this.prevFloor = lowerFloor;
+
             if ((this._rooms.length > 1) && (Math.random() > 0.5)) {
                 this._rooms.pop();
             }
-
 
             this._finalize(lowerFloor);
         }
@@ -188,7 +206,8 @@ class BuildingFloor {
                     r.y = randPos(this.edges[W].rMin, this.edges[W].rMax, r.h);
                     this.edges[W].pos -= r.w;
                     
-                    this.edges[W].rMin = r.y;
+                    this.edges[W].rMin =
+                     r.y;
                     this.edges[W].rMax = r.y + r.h;
 
                     this.edges[S].pos = Math.min(this.edges[S].pos, r.y);
@@ -231,7 +250,34 @@ class BuildingFloor {
 
     }
 
+    _locateStairs() {
+        // pick a random room 
+        const stairRoom = randomElement(this._rooms);
+
+        // grab a location in the room
+        const x = randomBetween(1, stairRoom.w-1);
+        const y = randomBetween(1, stairRoom.h-1);
+
+        this.stairsLoc = {
+            x: stairRoom.x + x,
+            y: stairRoom.y + y,
+            r: Math.floor(Math.random() * 4)
+        };
+
+        // if we're close to the previous stairs, match them
+        if (this.prevFloor && this.prevFloor.stairsLoc) {
+            const dx = Math.abs(this.stairsLoc.x - this.prevFloor.stairsLoc.x);
+            const dy = Math.abs(this.stairsLoc.y - this.prevFloor.stairsLoc.y);
+
+            if ((dx < 2) && (dy < 2)) {
+                this.stairsLoc = {...this.prevFloor.stairsLoc};
+            }
+        }
+    }
+
     _finalize(prevFloor = null) {
+        this._locateStairs();
+
         this.contents = [];
         for (let i=0; i < this.h; i++) {
             // contents.push([]);
@@ -375,6 +421,22 @@ class BuildingFloor {
     
         let intWalls = new Map();
 
+        const addFloorAt = (x,y) => {
+            let isStairs = false;
+            if (this.stairsLoc !== null) {
+                if (x === this.stairsLoc[0] &&
+                    y === this.stairsLoc[1]) {
+                        isStairs = true;
+                    }
+            }
+            this.floors.push({
+                x,
+                y,
+                obj: (isStairs) ? OBJ_STAIRS : OBJ_NONE
+            });
+        }
+
+
         for (let y=0; y < this.h+1; y++) {
             for (let x=0; x < this.w+1; x++) {
                 const currCell = safeGetCell(x, y, this.contents);
@@ -383,20 +445,26 @@ class BuildingFloor {
                 if (prevFloor !== null) {                    
                     const prevCell = safeGetCell(x, y, prevFloor.contents);
                     if ((prevCell !== -1) && (currCell === -1)) {
+                        addFloorAt(x,y);
+                        /*
                         this.floors.push({
                             x,
                             y,
                             obj: OBJ_NONE
                         });
+                        */
                     }                     
                 }
 
                 if (currCell !== -1) {
+                    /*
                     this.floors.push({
                         x,
                         y,
                         obj: OBJ_NONE
                     });
+                    */
+                    addFloorAt(x, y);
 
                     this.ceilings.push({
                         x,
@@ -599,8 +667,28 @@ class BuildingFloor {
                     break;
             }
         });
+        ctx.restore(); // end walls
 
-        ctx.restore();
+        // draw stairs
+        if (this.zPos > 0 && this.stairsLoc !== null) {
+            ctx.save();
+            ctx.fillStyle = "#F0F";
+            
+            ctx.translate((this.stairsLoc.x + 0.5) * GRID_SIZE,
+                (this.stairsLoc.y + 0.5) * GRID_SIZE);
+                ctx.rotate(Math.PI/2 * this.stairsLoc.r);
+                ctx.fillRect(-GRID_SIZE/2, -GRID_SIZE/2, GRID_SIZE, GRID_SIZE);
+            
+            ctx.fillStyle = "#FFF";
+            ctx.beginPath();
+            ctx.arc(0, -GRID_SIZE/4, GRID_SIZE/4, 0, Math.PI * 2);
+            ctx.fill();
+    
+            ctx.restore();
+        }
+
+
+
 
         ctx.restore();
     }
