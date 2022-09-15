@@ -1,7 +1,7 @@
 import { randomColorLight } from "../utils/colorutils";
 
 // const GRID_MIN = 1;
-const GRID_SIZE = 20;
+const GRID_SIZE = 10;
 const MIN_ROOM_SIZE = 3;
 const MAX_ROOM_SIZE = 7;
 
@@ -78,6 +78,7 @@ class Building {
             this._addFloor();
         }
 
+        this.floors[this.floors.length-1].hasRoof = true;
     }
 
     _addFloor() {
@@ -88,7 +89,6 @@ class Building {
             this.floors.push(new BuildingFloor(prevFloor));
         }
         
-        this.floors[this.floors.length-1].hasRoof = true;
     }
 
     draw(ctx, floor) {
@@ -147,6 +147,7 @@ class BuildingFloor {
 
             this._finalize(lowerFloor);
         }
+        this.hasRoof = false;
 
     }
 
@@ -251,6 +252,9 @@ class BuildingFloor {
     }
 
     _locateStairs() {
+
+        if (this.zPos === 0) return;
+
         // pick a random room 
         const stairRoom = randomElement(this._rooms);
 
@@ -422,18 +426,22 @@ class BuildingFloor {
         let intWalls = new Map();
 
         const addFloorAt = (x,y) => {
-            let isStairs = false;
-            if (this.stairsLoc !== null) {
-                if (x === this.stairsLoc[0] &&
-                    y === this.stairsLoc[1]) {
-                        isStairs = true;
-                    }
-            }
-            this.floors.push({
+
+            const floor = {
                 x,
                 y,
-                obj: (isStairs) ? OBJ_STAIRS : OBJ_NONE
-            });
+                obj: OBJ_NONE
+            };
+
+            if (this.stairsLoc !== null) {
+                if (x === this.stairsLoc.x &&
+                    y === this.stairsLoc.y) {
+                        floor.obj = OBJ_STAIRS;
+                        floor.rot = this.stairsLoc.r;
+                    }
+            }
+
+            this.floors.push(floor);
         }
 
 
@@ -446,24 +454,10 @@ class BuildingFloor {
                     const prevCell = safeGetCell(x, y, prevFloor.contents);
                     if ((prevCell !== -1) && (currCell === -1)) {
                         addFloorAt(x,y);
-                        /*
-                        this.floors.push({
-                            x,
-                            y,
-                            obj: OBJ_NONE
-                        });
-                        */
                     }                     
                 }
 
                 if (currCell !== -1) {
-                    /*
-                    this.floors.push({
-                        x,
-                        y,
-                        obj: OBJ_NONE
-                    });
-                    */
                     addFloorAt(x, y);
 
                     this.ceilings.push({
@@ -681,7 +675,7 @@ class BuildingFloor {
             
             ctx.fillStyle = "#FFF";
             ctx.beginPath();
-            ctx.arc(0, -GRID_SIZE/4, GRID_SIZE/4, 0, Math.PI * 2);
+            ctx.arc(GRID_SIZE/4, 0, GRID_SIZE/4, 0, Math.PI * 2);
             ctx.fill();
     
             ctx.restore();
